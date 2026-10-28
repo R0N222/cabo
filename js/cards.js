@@ -8,24 +8,54 @@ const ALL_CODES = SUITS.flatMap(s => RANKS.map(r => s + r));
 function cardRank(code) { return code[1]; }
 function cardSuit(code) { return code[0]; }
 
-function cardValue(code) {
+// House rules the host can change in the lobby
+const DEFAULT_RULES = {
+  redKing: -1,       // value of Herz- and Karo-König: -1 or 0
+  blackKing: false,  // Kreuz-/Pik-König may look at two cards and swap
+  snap: true,        // throwing matching cards onto the discard pile
+  penalty: 10,       // added to a failed Cabo call
+  target: 100,       // the game ends once someone goes over this
+  half: true,        // landing exactly on the target halves your score
+  kamikaze: false,   // Dame, Dame, Kreuz-König, Pik-König: you 0, everyone else 50
+  easy: false,       // memory aid: cards you have seen stay face-up for you
+};
+const RULE_CHOICES = { redKing: [-1, 0], penalty: [5, 10, 15], target: [50, 100, 150] };
+
+function sanitizeRules(r) {
+  const out = { ...DEFAULT_RULES };
+  for (const k in DEFAULT_RULES) {
+    if (!r || !(k in r)) continue;
+    if (RULE_CHOICES[k]) { if (RULE_CHOICES[k].includes(r[k])) out[k] = r[k]; } else out[k] = !!r[k];
+  }
+  return out;
+}
+
+const isRedSuit = s => s === 'h' || s === 'd';
+
+function cardValue(code, rules = DEFAULT_RULES) {
   const s = code[0], r = code[1];
   if (r === 'A') return 1;
   if (r === 'T') return 10;
   if (r === 'B') return 11;
   if (r === 'D') return 12;
-  if (r === 'K') return (s === 'h' || s === 'd') ? 0 : 13;
+  if (r === 'K') return isRedSuit(s) ? rules.redKing : 13;
   return +r;
 }
 
-function cardAction(code) {
+function cardAction(code, rules = DEFAULT_RULES) {
   switch (code[1]) {
     case '7': case '8': return 'peek';
     case '9': case 'T': return 'spy';
     case 'B': case 'D': return 'swap';
-    case 'K': return 'king';
+    case 'K': return rules.blackKing && !isRedSuit(code[0]) ? 'king' : null;
     default: return null;
   }
+}
+
+function isKamikaze(codes) {
+  if (codes.length !== 4) return false;
+  const k = codes.map(c => c[1] === 'K' && isRedSuit(c[0]) ? 'r' : c[1]).sort().join('');
+  return k === 'DDKK';
 }
 
 // ---------- Art ----------

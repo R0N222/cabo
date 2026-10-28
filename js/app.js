@@ -304,7 +304,7 @@ function renderTable(v, prev) {
   const ended = v.phase === 'roundEnd' || v.phase === 'gameEnd';
   const A = v.action;
   const caller = v.cabo && v.cabo.by;
-  const canSnap = v.phase === 'play' && v.discard.length && caller !== v.me && mineP && mineP.hand.some(x => x != null);
+  const canSnap = v.settings.snap && v.phase === 'play' && v.discard.length && caller !== v.me && mineP && mineP.hand.some(x => x != null);
   if (!canSnap) App.snapMode = false;
 
   // clickable logic
@@ -485,7 +485,7 @@ function renderButtons(v, myTurn, canSnap) {
     if (App.snapMode) return;
     if (myTurn && v.step === 'start' && !v.cabo) add(btn(t('cabo'), 'cabo big', () => send({ t: 'cabo' })));
     if (myTurn && v.step === 'drawn' && (v.drawn.from === 'deck' || !m.hand.some(x => x != null))) {
-      const k = cardAction(v.faces[v.drawn.id] || 'xA');
+      const k = cardAction(v.faces[v.drawn.id] || 'xA', v.settings);
       add(btn(t('discard') + (k ? ` <small style="opacity:.75">→ ${t('name_' + k)}</small>` : ''), 'primary', () => send({ t: 'discard' })));
     }
     if (myTurn && v.step === 'action') {
@@ -595,7 +595,12 @@ function handleFx(f, v) {
       toast(t('snapFail', { name: pname(f.pid) }), 'bad');
       break;
     case 'reshuffle': Sound.play('shuffle'); toast(t('reshuffle')); break;
-    case 'roundEnd': Sound.play('roundEnd', 10); break;
+    case 'roundEnd': {
+      Sound.play('roundEnd', 10);
+      const k = v.results && v.results.rows.find(r => (r.note || '').includes('kamikaze') && !r.note.includes('Hit'));
+      if (k) setTimeout(() => { Sound.play('cabo'); shake(); slam('KAMIKAZE!', pname(k.id)); }, 900);
+      break;
+    }
     case 'gameEnd': setTimeout(() => { Sound.play('win'); Particles.confetti(v.results && v.results.winners.includes(v.me) ? 220 : 120); }, 1400); break;
     case 'join': Sound.play('join'); break;
   }
@@ -622,10 +627,11 @@ function renderResults(animate) {
   const isHost = App.mode === 'host';
   box.innerHTML = `<h2 class="${win ? 'win' : ''}">${esc(title)}</h2>` + rows.map((r, i) => {
     const p = v.players.find(x => x.id === r.id) || { name: '?', id: r.id };
-    const notes = (r.note || '').split(' ').filter(Boolean).map(n => `<small class="${n === 'caboFail' ? 'bad' : 'good'}">${t(n)}</small>`).join('');
+    const RS = v.settings;
+    const notes = (r.note || '').split(' ').filter(Boolean).map(n => ' · ' + `<span class="${n === 'caboFail' || n === 'kamikazeHit' ? 'bad' : 'good'}">${t(n, { pen: RS.penalty, t: RS.target, h: RS.target / 2 })}</span>`).join('');
     return `<div class="rrow ${r.total === best ? 'best' : ''}" style="animation-delay:${i * 80}ms">${avatar(p, v)}
-      <div class="nm">${esc(r.id === v.me ? t('you') : p.name)}${notes || `<small>${r.sum} ${t('points')}</small>`}</div>
-      <div class="add">+${r.add}</div><div class="tot ${r.total > 100 ? 'over' : ''}" data-to="${r.total}" data-from="${r.total - r.add}">${animate ? r.total - r.add : r.total}</div></div>`;
+      <div class="nm">${esc(r.id === v.me ? t('you') : p.name)}<small>${t('pts', { n: r.sum })}${notes}</small></div>
+      <div class="add">${r.add < 0 ? r.add : '+' + r.add}</div><div class="tot ${r.total > RS.target ? 'over' : ''}" data-to="${r.total}" data-from="${r.total - r.add}">${animate ? r.total - r.add : r.total}</div></div>`;
   }).join('') + `<div class="row center wrap" style="margin-top:14px;gap:8px">${isHost
     ? (R.over ? `<button class="btn ghost" id="rLobby">${t('toLobby')}</button><button class="btn primary big" id="rNew">${t('newGame')}</button>` : `<button class="btn primary big" id="rNext">${t('nextRound')}</button>`)
     : `<div class="muted">${t('waitNext')}</div>`}</div>`;
@@ -725,7 +731,7 @@ function renderLobby() {
     <div class="lbl">${t('players')} (${v.players.length}/6)</div>
     <div class="plist">${players}</div>
     ${isHost ? `<div class="row"><button class="btn" id="bBot" ${v.players.length >= 6 ? 'disabled' : ''}>${t('addBot')}</button></div>` : ''}
-    <div class="switch ${v.settings.easy ? 'on' : ''}" id="swEasy" style="${isHost ? '' : 'pointer-events:none;opacity:.8'}"><span class="kn"></span><span class="tx">${t('easy')}<small>${t('easyHint')}</small></span></div>
+    ${rulesPanel(v.settings, isHost)}
     ${isHost ? `<button class="btn primary big" id="bStart" ${v.players.length < 2 ? 'disabled' : ''}>${v.players.length < 2 ? t('needTwo') : t('start')}</button>`
              : `<p class="muted dots">${t('waitingHost')}</p>`}
     <div class="row center"><button class="btn ghost" id="bLeave">${t('leave')}</button><button class="btn ghost" id="bRules2">${t('rules')}</button></div>
@@ -743,7 +749,11 @@ function renderLobby() {
     q('#bShare') && q('#bShare').addEventListener('click', () => navigator.share({ title: 'Cabo', text: LANG === 'de' ? 'Spiel Cabo mit mir!' : 'Play Cabo with me!', url: shareLink() }).catch(() => {}));
     q('#bBot').addEventListener('click', () => { Sound.play('join'); Engine.addBot(); });
     q('#bStart').addEventListener('click', () => { Sound.init(); Engine.startGame(); });
-    q('#swEasy').addEventListener('click', () => Engine.setEasy(!v.settings.easy));
+    el.querySelectorAll('[data-rule]').forEach(b => b.addEventListener('click', () => {
+      Sound.play('select');
+      const k = b.dataset.rule;
+      Engine.setRule(k, b.dataset.val === undefined ? !v.settings[k] : +b.dataset.val);
+    }));
     el.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => Engine.removePlayer(b.dataset.rm)));
   }
 }
@@ -761,7 +771,16 @@ function closeModal() { $('#modal').classList.add('hidden'); }
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 $('#modal .modal-x').addEventListener('click', closeModal);
 
-function openRules() { openModal(`<h2>${t('rules')}</h2>${t('rulesHtml')}`); }
+function openRules() { openModal(`<h2>${t('rules')}</h2>${rulesHTML(App.V && App.V.settings)}`); }
+
+function rulesPanel(R, isHost) {
+  const vars = { t: R.target, h: R.target / 2 };
+  const seg = k => `<div class="rule"><span class="tx">${t('set_' + k)}</span><div class="seg">${RULE_CHOICES[k].map(o => `<button data-rule="${k}" data-val="${o}" class="${R[k] === o ? 'on' : ''}">${k === 'penalty' ? '+' + o : o}</button>`).join('')}</div></div>`;
+  const sw = k => `<div class="switch ${R[k] ? 'on' : ''}" data-rule="${k}"><span class="kn"></span><span class="tx">${t(k === 'easy' ? 'easy' : 'set_' + k, vars)}<small>${t(k === 'easy' ? 'easyHint' : 'set_' + k + 'Hint', vars)}</small></span></div>`;
+  return `<details class="rules" ${isHost ? 'open' : ''}><summary>${t('houseRules')}</summary><div class="stack ${isHost ? '' : 'ro'}">
+    ${seg('redKing')}${sw('blackKing')}${sw('snap')}${seg('penalty')}${seg('target')}${sw('half')}${sw('kamikaze')}${sw('easy')}
+    ${isHost ? '' : `<div class="muted" style="font-size:12px">${t('hostOnly')}</div>`}</div></details>`;
+}
 
 function openSettings() {
   const styles = ['classic', 'tournament', 'german'];

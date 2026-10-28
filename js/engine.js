@@ -20,7 +20,7 @@ const Engine = (() => {
     S = {
       phase: 'lobby', hostId, players: [], deck: [], discard: [], faces: {}, known: {},
       turn: 0, step: 'start', drawn: null, action: null, cabo: null, reveals: [],
-      round: 0, deal: 0, starter: rnd(8), settings: { easy: false }, fx: [], seq: 0,
+      round: 0, deal: 0, starter: rnd(8), settings: { ...DEFAULT_RULES }, fx: [], seq: 0,
       history: [], turnCount: 0, results: null,
     };
     addPlayer(hostId, hostName, false);
@@ -32,6 +32,7 @@ const Engine = (() => {
     for (const k in S.known) S.known[k] = new Set(S.known[k]);
     S.players.forEach(p => { if (!p.bot && p.id !== S.hostId) p.connected = false; });
     S.reveals = [];
+    S.settings = sanitizeRules(S.settings);
     if (S.phase === 'play' && S.step === 'action' && S.action && S.action.kind === 'king') S.action.decide = !!(S.action.own && S.action.opp);
   }
 
@@ -153,24 +154,27 @@ const Engine = (() => {
     fx('turn', { pid: cur().id });
   }
 
-  function handSum(p) { return p.hand.reduce((a, id) => a + (id == null ? 0 : cardValue(S.faces[id])), 0); }
+  function handSum(p) { return p.hand.reduce((a, id) => a + (id == null ? 0 : cardValue(S.faces[id], S.settings)), 0); }
 
   function endRound() {
     S.phase = 'roundEnd';
     S.drawn = null; S.action = null; S.reveals = [];
+    const R = S.settings;
     const sums = S.players.map(handSum);
     const min = Math.min(...sums);
+    const kami = R.kamikaze ? S.players.find(p => isKamikaze(p.hand.filter(id => id != null).map(id => S.faces[id]))) : null;
     const rows = S.players.map((p, i) => {
       const caller = S.cabo && S.cabo.by === p.id;
       let add = sums[i], note = '';
-      if (caller) { if (sums[i] <= min) { add = 0; note = 'caboOk'; } else { add = sums[i] + 10; note = 'caboFail'; } }
+      if (kami) { add = p === kami ? 0 : 50; note = p === kami ? 'kamikaze' : 'kamikazeHit'; }
+      else if (caller) { if (sums[i] <= min) { add = Math.min(0, sums[i]); note = 'caboOk'; } else { add = sums[i] + R.penalty; note = 'caboFail'; } }
       p.total += add;
-      if (p.total === 100) { p.total = 50; note = note ? note + ' lucky' : 'lucky'; }
+      if (R.half && p.total === R.target) { p.total = R.target / 2; note = note ? note + ' lucky' : 'lucky'; }
       p.roundScore = add;
       return { id: p.id, sum: sums[i], add, total: p.total, note };
     });
     S.history.push(rows.map(r => ({ id: r.id, add: r.add })));
-    const over = S.players.some(p => p.total > 100);
+    const over = S.players.some(p => p.total > R.target);
     const best = Math.min(...S.players.map(p => p.total));
     S.results = { rows, over, winners: over ? S.players.filter(p => p.total === best).map(p => p.id) : [] };
     fx('roundEnd');
@@ -249,7 +253,7 @@ const Engine = (() => {
         S.discard.push(id);
         knowAll(id);
         S.drawn = null;
-        const kind = cardAction(S.faces[id]);
+        const kind = cardAction(S.faces[id], S.settings);
         fx('discard', { pid, id, kind });
         if (kind && S.drawn === null && hasTargets(kind, pid) && fromDeck) {
           S.step = 'action';
@@ -311,7 +315,7 @@ const Engine = (() => {
       }
 
       case 'snap': {
-        if (S.phase !== 'play' || !S.discard.length) return;
+        if (S.phase !== 'play' || !S.discard.length || !S.settings.snap) return;
         if (S.cabo && S.cabo.by === pid) return;
         const id = p.hand[a.slot];
         if (id == null) return;
@@ -392,7 +396,7 @@ const Engine = (() => {
 
   // ---------- bots ----------
   const AVG = 7.4;
-  const val = id => cardValue(S.faces[id]);
+  const val = id => cardValue(S.faces[id], S.settings);
 
   function botKnowledge(p) {
     const k = S.known[p.id];
@@ -479,7 +483,7 @@ const Engine = (() => {
   // Bots throw matching cards they remember onto the pile
   function botSnaps() {
     const t = top();
-    if (t == null) return;
+    if (t == null || !S.settings.snap) return;
     const r = cardRank(S.faces[t]);
     S.players.forEach(p => {
       if (!p.bot || (S.cabo && S.cabo.by === p.id)) return;
@@ -529,12 +533,16 @@ const Engine = (() => {
 
   function commit() { onChange(); scheduleBots(); }
 
-  function setEasy(on) { S.settings.easy = !!on; commit(); }
+  function setRule(k, v) {
+    if (S.phase !== 'lobby' || !(k in DEFAULT_RULES)) return;
+    S.settings = sanitizeRules({ ...S.settings, [k]: v });
+    commit();
+  }
   function kick() { commit(); }
 
   return {
     create, load, serialize, act, view, addBot, addPlayer, removePlayer, setConnected,
-    startGame, nextRound, backToLobby, setEasy, kick,
+    startGame, nextRound, backToLobby, setRule, kick,
     get state() { return S; },
     set onChange(fn) { onChange = fn; },
   };

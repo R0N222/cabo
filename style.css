@@ -220,3 +220,18 @@ h1.title { margin: 0; text-align: center; font-family: Georgia, serif; font-styl
 .scoretbl th, .scoretbl td { padding: 6px 8px; text-align: right; border-bottom: 1px solid rgba(255,255,255,.08); }
 .scoretbl th:first-child, .scoretbl td:first-child { text-align: left; }
 .scoretbl tfoot td { font-weight: 900; color: var(--gold); border: 0; }
+
+/* lobby house rules */
+details.rules { border-radius: 14px; background: rgba(0,0,0,.18); padding: 4px 10px 10px; }
+details.rules summary { cursor: pointer; font-weight: 700; padding: 8px 2px; color: var(--gold); list-style: none; display: flex; justify-content: space-between; }
+details.rules summary::after { content: '▾'; transition: transform .2s; }
+details.rules:not([open]) summary::after { transform: rotate(-90deg); }
+details.rules summary::-webkit-details-marker { display: none; }
+details.rules .stack { gap: 6px; }
+details.rules .switch { padding: 8px 10px; font-size: 14px; }
+.rule { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; background: rgba(255,255,255,.06); font-size: 14px; }
+.rule .tx { flex: 1; }
+.rule .seg { flex: none; }
+.rule .seg button { padding: 6px 12px; min-width: 44px; }
+.ro .rule, .ro .switch { pointer-events: none; }
+.rrow .nm small { white-space: normal; line-height: 1.3; }
