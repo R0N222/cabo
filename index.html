@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Cabo</title>
+<meta name="description" content="Cabo – das Kartenspiel mit Skatblatt. Online mit Freunden spielen: Link schicken, fertig.">
+<meta property="og:title" content="Cabo – spiel eine Runde mit mir!">
+<meta property="og:description" content="Kartenspiel mit Skatblatt. Link öffnen, Namen eingeben, los geht's.">
+<meta name="theme-color" content="#0b3a27">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='14' y='6' width='36' height='52' rx='5' fill='%23fff' stroke='%23999' transform='rotate(-10 32 32)'/%3E%3Cpath fill='%23c8102e' d='M32,46 C28,40 18,34 18,26 C18,20 23,17 27,18 C30,19 32,22 32,24 C32,22 34,19 37,18 C41,17 46,20 46,26 C46,34 36,40 32,46Z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="table">
+  <div id="felt"></div>
+  <div id="ring"></div>
+  <div id="seats"></div>
+  <div id="discardSlot"><span></span></div>
+  <div id="deck"><span class="count"></span></div>
+  <div id="cards"></div>
+  <div id="banner"></div>
+  <header id="topbar">
+    <div class="brand"><span class="logo">Cabo</span><span id="roundLbl"></span></div>
+    <div class="tools">
+      <button class="icon" id="btnScores" aria-label="Scores"><svg viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z M7 6H4v1a3 3 0 0 0 3 3 M17 6h3v1a3 3 0 0 1-3 3 M12 13v4 M8 20h8 M9 17h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="icon" id="btnRules" aria-label="Rules"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5V14 M12 17.2v.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="icon" id="btnSettings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M19.4 13.5l1.6 1.2-2 3.4-1.9-.7a7 7 0 0 1-1.7 1l-.3 2h-4l-.3-2a7 7 0 0 1-1.7-1l-1.9.7-2-3.4 1.6-1.2a7 7 0 0 1 0-3l-1.6-1.2 2-3.4 1.9.7a7 7 0 0 1 1.7-1l.3-2h4l.3 2a7 7 0 0 1 1.7 1l1.9-.7 2 3.4-1.6 1.2a7 7 0 0 1 0 3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+    </div>
+  </header>
+  <div id="actionbar"><div id="mySeat"></div><div id="buttons"></div></div>
+</div>
+<canvas id="fx"></canvas>
+<div id="slam"></div>
+<section id="home" class="screen"></section>
+<section id="lobby" class="screen"></section>
+<div id="results"></div>
+<div id="modal" class="hidden"><div class="modal-card"><button class="modal-x" aria-label="close">✕</button><div class="modal-body"></div></div></div>
+<div id="toasts"></div>
+<div id="net"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
