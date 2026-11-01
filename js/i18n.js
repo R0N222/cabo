@@ -37,7 +37,8 @@ const STR = {
     set_redKing: 'Roter König (Herz & Karo)', set_redKingHint: 'Wert der roten Könige',
     set_blackKing: 'Schwarzer König: Gucken & Tauschen', set_blackKingHint: 'Abgelegt: eine eigene + eine fremde Karte ansehen, dann tauschen oder nicht.',
     set_snap: 'Abwerfen ⚡', set_snapHint: 'Passende Karten jederzeit auf die Ablage werfen. Fehlwurf = Strafkarte.',
-    set_penalty: 'Strafe für verfehltes Cabo', set_target: 'Spielende ab mehr als',
+    set_penalty: 'Strafe für verfehltes Cabo',
+    set_protect: 'Cabo-Karten geschützt', set_protectHint: 'Nach dem Cabo-Ruf darf niemand mehr mit dem Rufer tauschen (offizielle Regel).', set_target: 'Spielende ab mehr als',
     set_half: 'Genau-Treffer halbiert', set_halfHint: 'Wer genau auf {t} landet, fällt auf {h} zurück.',
     set_kamikaze: 'Kamikaze', set_kamikazeHint: 'Dame + Dame + Kreuz-König + Pik-König: du 0, alle anderen +50.',
     pts: '{n} Punkte',
@@ -82,7 +83,8 @@ const STR = {
     set_redKing: 'Red King (hearts & diamonds)', set_redKingHint: 'Value of the red Kings',
     set_blackKing: 'Black King: look & swap', set_blackKingHint: 'When discarded: look at one of yours and one of theirs, then swap or not.',
     set_snap: 'Snap ⚡', set_snapHint: 'Throw matching cards onto the discard pile any time. Wrong card = penalty card.',
-    set_penalty: 'Penalty for a failed Cabo', set_target: 'Game ends above',
+    set_penalty: 'Penalty for a failed Cabo',
+    set_protect: 'Cabo cards protected', set_protectHint: 'After a Cabo call nobody may swap with the caller (official rule).', set_target: 'Game ends above',
     set_half: 'Exact hit halves', set_halfHint: 'Land on exactly {t} and you drop back to {h}.',
     set_kamikaze: 'Kamikaze', set_kamikazeHint: 'Queen + Queen + black King + black King: you 0, everyone else +50.',
     pts: '{n} points',
@@ -118,7 +120,7 @@ function rulesHTML(R) {
     <h3>Aktionen</h3><p>7, 8 – <b>Gucken</b>: eigene Karte ansehen<br>9, 10 – <b>Spionieren</b>: fremde Karte ansehen<br>Bube, Dame – <b>Blind tauschen</b>: eigene mit fremder Karte${R.blackKing ? '<br>Schwarzer König – <b>Gucken & Tauschen</b>: beide ansehen, dann entscheiden' : ''}</p>
     <h3>Werte</h3><p>Ass 1 · 7–10 nach Zahl · Bube 11 · Dame 12 · schwarzer König 13 · <b>roter König ${R.redKing}</b></p>
     ${R.snap ? '<h3>Abwerfen ⚡</h3><p>Liegt oben auf der Ablage eine Karte, deren Wert du in deiner Hand hast? Drück <b>Abwerfen</b> und wirf sie blitzschnell drauf – jederzeit, auch wenn du nicht dran bist! Liegst du falsch, gibt es eine <b>Strafkarte</b>.</p>' : ''}
-    <h3>CABO!</h3><p>Glaubst du, du hast die wenigsten Punkte, rufst du statt zu ziehen <b>CABO</b>. Alle anderen haben noch einen Zug, deine Karten sind geschützt. Hast du wirklich die wenigsten (oder gleich wenig) Punkte, bekommst du <b>0</b> (oder weniger, wenn deine Hand negativ ist). Sonst: deine Punkte <b>+${R.penalty}</b>.</p>
+    <h3>CABO!</h3><p>Glaubst du, du hast die wenigsten Punkte, rufst du statt zu ziehen <b>CABO</b>. Alle anderen haben noch einen Zug${R.protect ? ', deine Karten sind dabei geschützt' : ' – und dürfen dir mit Bube/Dame noch Karten unterjubeln'}. Hast du wirklich die wenigsten (oder gleich wenig) Punkte, bekommst du <b>0</b> (oder weniger, wenn deine Hand negativ ist). Sonst: deine Punkte <b>+${R.penalty}</b>.</p>
     ${R.half ? `<h3>Genau-Treffer</h3><p>Landest du genau auf ${R.target} Punkten, fällst du auf ${half} zurück.</p>` : ''}
     ${R.kamikaze ? '<h3>Kamikaze</h3><p>Hast du am Rundenende genau Dame, Dame, Kreuz-König und Pik-König, bekommst du 0 – alle anderen <b>+50</b>.</p>' : ''}`;
   return `
@@ -130,7 +132,7 @@ function rulesHTML(R) {
     <h3>Actions</h3><p>7, 8 – <b>Peek</b>: look at one of your cards<br>9, 10 – <b>Spy</b>: look at someone else's card<br>Jack, Queen – <b>Blind swap</b>: one of yours with one of theirs${R.blackKing ? '<br>Black King – <b>Look & swap</b>: see both, then decide' : ''}</p>
     <h3>Values</h3><p>Ace 1 · 7–10 face value · Jack 11 · Queen 12 · black King 13 · <b>red King ${R.redKing}</b></p>
     ${R.snap ? "<h3>Snap ⚡</h3><p>Is the top discard a rank you hold? Hit <b>Snap</b> and throw yours on top – any time, even when it's not your turn! Wrong card = <b>penalty card</b>.</p>" : ''}
-    <h3>CABO!</h3><p>Think you have the lowest hand? Call <b>CABO</b> instead of drawing. Everyone else gets one more turn, your cards are protected. If you really are lowest (or tied), you score <b>0</b> (or less if your hand is negative). Otherwise: your points <b>+${R.penalty}</b>.</p>
+    <h3>CABO!</h3><p>Think you have the lowest hand? Call <b>CABO</b> instead of drawing. Everyone else gets one more turn${R.protect ? ' and your cards are protected' : ' – and may still swap cards with you using a Jack or Queen'}. If you really are lowest (or tied), you score <b>0</b> (or less if your hand is negative). Otherwise: your points <b>+${R.penalty}</b>.</p>
     ${R.half ? `<h3>Exact hit</h3><p>Land on exactly ${R.target} points and you drop back to ${half}.</p>` : ''}
     ${R.kamikaze ? '<h3>Kamikaze</h3><p>End a round holding exactly Queen, Queen and both black Kings: you score 0, everyone else <b>+50</b>.</p>' : ''}`;
 }

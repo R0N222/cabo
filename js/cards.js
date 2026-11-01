@@ -16,6 +16,7 @@ const DEFAULT_RULES = {
   penalty: 10,       // added to a failed Cabo call
   target: 100,       // the game ends once someone goes over this
   half: true,        // landing exactly on the target halves your score
+  protect: false,    // the Cabo caller's cards can no longer be swapped
   kamikaze: false,   // Dame, Dame, Kreuz-König, Pik-König: you 0, everyone else 50
   easy: false,       // memory aid: cards you have seen stay face-up for you
 };

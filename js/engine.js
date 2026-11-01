@@ -45,6 +45,7 @@ const Engine = (() => {
   const player = id => S.players.find(p => p.id === id);
   const cur = () => S.players[S.turn];
   const top = () => S.discard[S.discard.length - 1];
+  const locked = pid => !!(S.settings.protect && S.cabo && S.cabo.by === pid); // caller's cards are safe from swaps
   function fx(type, data = {}) { S.fx.push({ seq: ++S.seq, type, ...data }); if (S.fx.length > 40) S.fx.shift(); }
   function know(pid, id) { (S.known[pid] || (S.known[pid] = new Set())).add(id); }
   function knowAll(id) { S.players.forEach(p => know(p.id, id)); }
@@ -183,7 +184,7 @@ const Engine = (() => {
 
   function hasTargets(kind, pid) {
     const mine = player(pid).hand.some(id => id != null);
-    const others = S.players.filter(p => p.id !== pid && (kind === 'spy' || !(S.cabo && S.cabo.by === p.id)))
+    const others = S.players.filter(p => p.id !== pid && (kind === 'spy' || !locked(p.id)))
       .some(p => p.hand.some(id => id != null));
     if (kind === 'peek') return mine;
     if (kind === 'spy') return others;
@@ -288,7 +289,7 @@ const Engine = (() => {
           fx('spy', { pid, owner: a.owner, id });
           endTurn();
         } else {
-          if (!mine && S.cabo && S.cabo.by === a.owner) return;
+          if (!mine && locked(a.owner)) return;
           const pk = { owner: a.owner, slot: a.slot, id };
           if (A.kind === 'king') {
             if (mine ? A.own : A.opp) return; // king picks are final
@@ -413,7 +414,7 @@ const Engine = (() => {
     const out = [];
     S.players.forEach(o => {
       if (o.id === p.id) return;
-      if (forSwap && S.cabo && S.cabo.by === o.id) return;
+      if (forSwap && locked(o.id)) return;
       o.hand.forEach((id, i) => id != null && out.push({ owner: o.id, slot: i, id }));
     });
     return out;

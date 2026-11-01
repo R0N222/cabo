@@ -315,7 +315,7 @@ function renderTable(v, prev) {
     if (v.step === 'action' && A && !A.decide) {
       if (A.kind === 'peek') return owner === v.me;
       if (A.kind === 'spy') return owner !== v.me;
-      if (owner !== v.me && owner === caller) return false;
+      if (owner !== v.me && owner === caller && v.settings.protect) return false;
       if (A.kind === 'king') return owner === v.me ? !A.own : !A.opp;
       return true;
     }
@@ -335,7 +335,7 @@ function renderTable(v, prev) {
       if (id == null) return;
       const pos = seat.slot(si);
       const sel = A && ((A.own && A.own.id === id) || (A.opp && A.opp.id === id));
-      targets.set(id, { x: pos.x, y: pos.y, s: seat.s, r: 0, z: 30 + si, place: 'hand', owner: p.id, slot: si, click: clickHand(p.id, id), sel, lock: caller === p.id && !ended });
+      targets.set(id, { x: pos.x, y: pos.y, s: seat.s, r: 0, z: 30 + si, place: 'hand', owner: p.id, slot: si, click: clickHand(p.id, id), sel, lock: v.settings.protect && caller === p.id && !ended });
     });
   });
   if (v.drawn) {
@@ -778,7 +778,7 @@ function rulesPanel(R, isHost) {
   const seg = k => `<div class="rule"><span class="tx">${t('set_' + k)}</span><div class="seg">${RULE_CHOICES[k].map(o => `<button data-rule="${k}" data-val="${o}" class="${R[k] === o ? 'on' : ''}">${k === 'penalty' ? '+' + o : o}</button>`).join('')}</div></div>`;
   const sw = k => `<div class="switch ${R[k] ? 'on' : ''}" data-rule="${k}"><span class="kn"></span><span class="tx">${t(k === 'easy' ? 'easy' : 'set_' + k, vars)}<small>${t(k === 'easy' ? 'easyHint' : 'set_' + k + 'Hint', vars)}</small></span></div>`;
   return `<details class="rules" ${isHost ? 'open' : ''}><summary>${t('houseRules')}</summary><div class="stack ${isHost ? '' : 'ro'}">
-    ${seg('redKing')}${sw('blackKing')}${sw('snap')}${seg('penalty')}${seg('target')}${sw('half')}${sw('kamikaze')}${sw('easy')}
+    ${seg('redKing')}${sw('blackKing')}${sw('snap')}${seg('penalty')}${sw('protect')}${seg('target')}${sw('half')}${sw('kamikaze')}${sw('easy')}
     ${isHost ? '' : `<div class="muted" style="font-size:12px">${t('hostOnly')}</div>`}</div></details>`;
 }
 
